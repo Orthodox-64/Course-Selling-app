@@ -4,7 +4,8 @@ const adminRouter=Router();
 const bcrypt=require("bcrypt");
 const {z}=require("zod");
 const jwt=require("jsonwebtoken");
-const {JWT_ADMIN_PASSWORD}=require("../config")
+const {JWT_ADMIN_PASSWORD}=require("../config");
+console.log(JWT_ADMIN_PASSWORD);
 const {adminModel, courseModel}=require("../db");
 const {adminMiddleware}=require("../middleware/admin");
 const course = require("./course");
@@ -68,34 +69,38 @@ res.json({ token: token });
 
 // adminRouter.use(adminMiddleware); 
 adminRouter.post("/course",adminMiddleware,async function(req,res){
-    const requiredbody=z.object({
-        title:z.string().min(6).max(50),
-        description:z.string().min(10).max(100),
-        imageUrl:z.string(),
-        price:z.string()
-    })
-    const parseData=requiredbody.safeParse(req.body);
-    if(!parseData.success){
-        res.json({msg:"Invalid Format"});
+    const requiredbody = z.object({
+        title: z.string().min(6).max(50),
+        description: z.string().min(10).max(100),
+        imageUrl: z.string(),
+        price: z.string()
+    });
+    
+    const parseData = requiredbody.safeParse(req.body);
+    if (!parseData.success) {
+        return res.json({ msg: "Invalid Format" });
     }
-    const adminId=req.userId;
-    const {title,description,imageUrl,price}=requiredbody;
-    try{
-       const course= await courseModel.create({
-            title:title,
-            description:description,
-            imageUrl:imageUrl,
-            price:price,
-            creatorId:adminId
-        })
-    }
-    catch(e){
+    
+    const adminId = req.userId;
+    const { title, description, imageUrl, price } = parseData.data;  // Corrected destructuring
+    
+    try {
+        const course = await courseModel.create({
+            title: title,
+            description: description,
+            imageUrl: imageUrl,
+            price: price,
+            creatorId: adminId
+        });
+    
+        // Return response only if course creation is successful
+        res.json({
+            msg: "Course Created",
+            courseId: course._id
+        });
+    } catch (e) {
         res.status(403).send("Invalid Input");
     }
-    res.json({
-        msg:"Course Created",
-        courseId:course._id
-    })
 })
 adminRouter.put("/course",adminMiddleware,async function(req,res){
     const requiredbody=z.object({
