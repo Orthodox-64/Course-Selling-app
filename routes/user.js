@@ -3,9 +3,10 @@ const Router = express.Router;
 const bcrypt=require("bcrypt");
 const jwt=require("jsonwebtoken");
 const {z}=require("zod");
-const { userModel } = require("../db");
+const { userModel, purchaseModel } = require("../db");
 const userRouter = Router();
-const {JWT_USER_PASSWORD}=require("../config")
+const {JWT_USER_PASSWORD}=require("../config");
+const { userMiddleware } = require("../middleware/user");
 
 userRouter.post("/signup", async function(req, res) { 
     const requiredbody=z.object({
@@ -66,8 +67,18 @@ userRouter.post("/signin", async function(req, res) {
    }
 });
 
-userRouter.get("/purchases", function(req, res) {
-
+userRouter.get("/purchases",userMiddleware,async function(req, res) {
+       const userId=req.userId;
+       const purchases=await purchaseModel.find({
+          userId
+       })
+       const courseData=await purchaseModel.find({
+           _id:{$in:purchases.map(x=>x.courseId)}
+       })
+       res.json({
+          purchases,
+          courseData
+       })
  });
 
 module.exports = {
